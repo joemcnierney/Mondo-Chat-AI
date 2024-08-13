@@ -1,4 +1,4 @@
-//  Joe McNierney
+//  Joe McNierney, Copyright Mondo 2024
 //  ContentView.swift
 //  Version: 1.0.0
 
