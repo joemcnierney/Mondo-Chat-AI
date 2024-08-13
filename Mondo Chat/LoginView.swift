@@ -1,5 +1,5 @@
 // LoginView.swift
-// Version 1.1.0
+// Version 1.2.0
 
 import SwiftUI
 
@@ -28,6 +28,8 @@ struct LoginView: View {
             TextField("Email", text: $email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
+                .autocapitalization(.none)  // Disable capitalization
+                .disableAutocorrection(true)  // Disable autocorrect
 
             // Password Field
             SecureField("Password", text: $password)
@@ -69,7 +71,7 @@ struct LoginView: View {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: Any] = ["email": email, "password": password]
+        let body: [String: Any] = ["email": email.lowercased(), "password": password]  // Convert email to lowercase
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in

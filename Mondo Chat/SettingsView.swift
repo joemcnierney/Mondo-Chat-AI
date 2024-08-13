@@ -1,9 +1,12 @@
 // SettingsView.swift
-// Version 1.1.0
+// Version 1.2.0
 
 import SwiftUI
 
 struct SettingsView: View {
+    @AppStorage("userToken") var userToken: String = ""
+    @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
+
     var body: some View {
         Form {
             Section(header: Text("Account")) {
@@ -46,7 +49,7 @@ struct SettingsView: View {
             
             Section {
                 Button(action: {
-                    // Placeholder for sign out action
+                    logout()
                 }) {
                     Text("Sign Out")
                         .foregroundColor(.red)
@@ -54,6 +57,11 @@ struct SettingsView: View {
             }
         }
         .navigationBarTitle("Settings")
+    }
+
+    private func logout() {
+        userToken = ""  // Clear the user token
+        presentationMode.wrappedValue.dismiss()  // Dismiss the settings view
     }
 }
 
