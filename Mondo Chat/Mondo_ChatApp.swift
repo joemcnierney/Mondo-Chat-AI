@@ -1,9 +1,5 @@
-//
 //  Mondo_ChatApp.swift
-//  Mondo Chat
-//
-//  Created by Joe McNierney on 8/9/24.
-//
+//  Version: 1.0.0
 
 import SwiftUI
 

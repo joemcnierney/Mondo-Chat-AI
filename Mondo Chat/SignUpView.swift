@@ -1,9 +1,5 @@
-//
 //  SignUpView.swift
-//  Mondo Chat
-//
-//  Created by Joe McNierney on 8/12/24.
-//
+//  Version: 1.0.0
 
 import SwiftUI
 

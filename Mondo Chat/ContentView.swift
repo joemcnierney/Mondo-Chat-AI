@@ -1,3 +1,7 @@
+//  Joe McNierney
+//  ContentView.swift
+//  Version: 1.0.0
+
 import SwiftUI
 import Combine
 
@@ -7,7 +11,7 @@ struct ContentView: View {
     @State private var isMenuOpen: Bool = false
     @State private var chatSessionId: String?
     @State private var messages: [Message] = []
-    @State private var sessionTitle: String = "Default Session Name"
+    @State private var sessionTitle: String = "Default Session"
     @AppStorage("userToken") var userToken: String = ""
 
     var body: some View {
