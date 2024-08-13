@@ -1,6 +1,6 @@
-//  Joe McNierney, Copyright Mondo 2024
-//  ContentView.swift
-//  Version: 1.0.0
+// ContentView.swift
+// Mondo Chat App
+// Version 1.2.0
 
 import SwiftUI
 import Combine
@@ -11,7 +11,8 @@ struct ContentView: View {
     @State private var isMenuOpen: Bool = false
     @State private var chatSessionId: String?
     @State private var messages: [Message] = []
-    @State private var sessionTitle: String = "Default Session"
+    @State private var sessionTitle: String = "Temporary Chat"
+    @State private var isEditingSessionTitle: Bool = false
     @AppStorage("userToken") var userToken: String = ""
 
     var body: some View {
@@ -19,37 +20,44 @@ struct ContentView: View {
             VStack {
                 // Top bar with menu icon and edit icon
                 HStack {
-                    // Menu Icon (Placeholder)
+                    // Menu Icon
                     Button(action: {
                         isMenuOpen.toggle()
                     }) {
                         Image(systemName: "line.horizontal.3")
                             .resizable()
                             .frame(width: 24, height: 24)
-                            .foregroundColor(.black)  // Set icon color to black
+                            .foregroundColor(.black)
                             .padding(.leading, 16)
                     }
                     .sheet(isPresented: $isMenuOpen) {
                         MenuView()
                     }
-                    
+
                     Spacer()
-                    
-                    // Edit Icon (Placeholder)
+
+                    // Session Title with Edit Capability
+                    TextField("", text: $sessionTitle, onCommit: updateSessionTitle)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .disabled(!isEditingSessionTitle)
+                        .frame(maxWidth: geometry.size.width * 0.6)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .onLongPressGesture {
+                            isEditingSessionTitle.toggle()
+                        }
+
+                    Spacer()
+
+                    // Edit Icon Placeholder
                     Image(systemName: "square.and.pencil")
                         .resizable()
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.black)  // Set icon color to black
+                        .foregroundColor(.black)
                         .padding(.trailing, 16)
                 }
-                
-                // Session Title
-                TextField("Enter session title", text: $sessionTitle, onCommit: {
-                    updateChatSessionTitle()
-                })
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-                    .multilineTextAlignment(.center)
 
                 // Chat Bubbles
                 ScrollView {
@@ -77,7 +85,7 @@ struct ContentView: View {
                         .padding(.vertical, 4)
                     }
                 }
-                
+
                 Spacer()
 
                 // Message input field
@@ -85,7 +93,7 @@ struct ContentView: View {
                     TextField("Message", text: $messageText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal, 16)
-                    
+
                     Button(action: {
                         sendMessage()
                     }) {
@@ -103,18 +111,18 @@ struct ContentView: View {
                     }
                 }
             }
-            .edgesIgnoringSafeArea(.horizontal) // Adjusts for safe areas except top and bottom
-            .edgesIgnoringSafeArea(.bottom) // Adjusts for safe areas except top and bottom
+            .edgesIgnoringSafeArea(.horizontal)
+            .edgesIgnoringSafeArea(.bottom)
         }
     }
-    
+
     // MARK: - Send Message Function
     private func sendMessage() {
         guard !messageText.isEmpty else {
             print("Message is empty, not sending.")
             return
         }
-        
+
         print("Sending message: \(messageText)")
 
         if let sessionId = chatSessionId {
@@ -133,6 +141,7 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Create Chat Session Function
     private func createChatSession(completion: @escaping (String?) -> Void) {
         guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/chat_sessions") else {
             print("Invalid URL for chat session creation")
@@ -145,7 +154,7 @@ struct ContentView: View {
         request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: Any?] = ["session_title": sessionTitle, "updated_at": nil]
+        let body: [String: Any] = ["session_title": sessionTitle, "updated_at": NSNull()]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -182,6 +191,7 @@ struct ContentView: View {
         }.resume()
     }
 
+    // MARK: - Store Message Function
     private func storeMessage(in sessionId: String) {
         guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages") else {
             print("Invalid URL for storing message")
@@ -191,7 +201,9 @@ struct ContentView: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
-        let body: [String: Any] = ["session_id": sessionId, "content": messageText]
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = ["session_id": sessionId, "content": messageText, "sender": "user"]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -206,32 +218,36 @@ struct ContentView: View {
             }
         }.resume()
     }
-    
-    private func updateChatSessionTitle() {
-        guard let sessionId = chatSessionId, !sessionTitle.isEmpty else {
-            print("Session ID or session title is invalid")
+
+    // MARK: - Update Session Title Function
+    private func updateSessionTitle() {
+        guard let sessionId = chatSessionId else {
+            print("No active session to update.")
             return
         }
-        
+
         guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/chat_sessions/\(sessionId)") else {
-            print("Invalid URL for updating chat session title")
+            print("Invalid URL for updating session title")
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
         request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let body: [String: Any] = ["session_title": sessionTitle]
+
+        let body: [String: Any] = ["session_title": sessionTitle, "updated_at": Int(Date().timeIntervalSince1970 * 1000)]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Failed to update session title: \(error.localizedDescription)")
-                return
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Failed to update session title: \(error.localizedDescription)")
+                    return
+                }
+                print("Session title updated successfully")
+                self.isEditingSessionTitle = false
             }
-            print("Session title updated successfully")
         }.resume()
     }
 }
