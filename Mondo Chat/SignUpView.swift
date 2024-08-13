@@ -1,5 +1,5 @@
-//  SignUpView.swift
-//  Version: 1.0.0
+// SignUpView.swift
+// Version 1.1.0
 
 import SwiftUI
 
@@ -7,62 +7,42 @@ struct SignUpView: View {
     @State private var name: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
-    @State private var isLoading: Bool = false
-    @State private var errorMessage: String?
-    
-    @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
+    @State private var showError: Bool = false
+    @State private var errorMessage: String = ""
     @AppStorage("userToken") var userToken: String = ""
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack {
             Spacer()
-            
-            // App Logo
+
+            // App Logo and Slogan
             Text("mon·do")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
-            
-            // App Slogan
             Text("CMO in your pocket")
                 .font(.subheadline)
                 .foregroundColor(.gray)
-            
+
             Spacer()
-            
+
             // Name Field
             TextField("Name", text: $name)
-                .autocapitalization(.words)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
-                .foregroundColor(.white)
-            
+
             // Email Field
             TextField("Email", text: $email)
-                .autocapitalization(.none)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
-                .foregroundColor(.white)
-            
+
             // Password Field
             SecureField("Password", text: $password)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
-                .foregroundColor(.white)
-            
-            // Error Message
-            if let errorMessage = errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-            
-            // Sign-Up Button
+
+            // Sign Up Button
             Button(action: {
-                signUpUser()
+                signUp()
             }) {
                 Text("Sign Up")
                     .font(.headline)
@@ -70,83 +50,66 @@ struct SignUpView: View {
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background(Color.blue)
-                    .cornerRadius(8)
+                    .cornerRadius(10)
+                    .padding()
             }
-            .disabled(isLoading)
-            
+
+            if showError {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
+            }
+
             Spacer()
-            
-            // Login Navigation
-            HStack {
-                Text("Already have an account?")
-                    .foregroundColor(.white)
-                Button(action: {
-                    // Navigate back to login view
-                }) {
-                    Text("Login")
-                        .foregroundColor(.blue)
-                        .fontWeight(.bold)
-                }
-            }
         }
         .padding()
-        .background(Color.black.edgesIgnoringSafeArea(.all))
     }
-    
-    // MARK: - Sign-Up Function
-    private func signUpUser() {
-        guard !name.isEmpty, !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Please fill out all fields."
-            return
-        }
 
-        isLoading = true
-        errorMessage = nil
-
+    private func signUp() {
         guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:uoSb7QpQ/auth/signup") else {
-            self.errorMessage = "Invalid URL"
-            self.isLoading = false
+            print("Invalid URL")
             return
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: String] = ["name": name, "email": email, "password": password]
+
+        let body: [String: Any] = ["name": name, "email": email, "password": password]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                self.isLoading = false
-                
-                if let error = error {
-                    self.errorMessage = error.localizedDescription
-                    return
-                }
-                
-                guard let data = data else {
-                    self.errorMessage = "No data in response"
-                    return
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                    self.errorMessage = "Sign up failed with status code: \(httpResponse.statusCode)"
-                    return
-                }
+            if let error = error {
+                print("Sign-up request failed: \(error.localizedDescription)")
+                showError(message: "Sign-up failed. Please try again.")
+                return
+            }
 
-                do {
-                    if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let token = jsonResponse["authToken"] as? String {
-                        self.userToken = token
-                        self.isLoggedIn = true
-                    } else {
-                        self.errorMessage = "authToken not found in response"
-                    }
-                } catch {
-                    self.errorMessage = "Failed to decode response: \(error.localizedDescription)"
+            guard let data = data else {
+                print("No data received")
+                showError(message: "No response from server.")
+                return
+            }
+
+            if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+               let token = jsonResponse["authToken"] as? String {
+                DispatchQueue.main.async {
+                    self.userToken = token
+                    // Navigate to the main content view
+                    // This could be done by setting a @State variable that controls the view flow
                 }
+            } else {
+                print("Failed to parse JSON response")
+                showError(message: "Error signing up. Please try again.")
             }
         }.resume()
+    }
+
+    private func showError(message: String) {
+        DispatchQueue.main.async {
+            self.errorMessage = message
+            self.showError = true
+        }
     }
 }
 

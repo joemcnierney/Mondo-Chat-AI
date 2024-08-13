@@ -1,6 +1,5 @@
-//  ContentView.swift
-//  Mondo Chat AI
-//  Version 1.2.0
+// ContentView.swift
+// Version 1.1.0
 
 import SwiftUI
 import Combine
@@ -9,7 +8,7 @@ struct ContentView: View {
     @State private var messageText: String = ""
     @State private var keyboardHeight: CGFloat = 0
     @State private var isMenuOpen: Bool = false
-    @State private var chatSessionId: Int?
+    @State private var chatSessionId: String?
     @State private var messages: [Message] = []
     @AppStorage("userToken") var userToken: String = ""
 
@@ -27,6 +26,7 @@ struct ContentView: View {
                             .frame(width: 24, height: 24)
                             .foregroundColor(.black)  // Set icon color to black
                             .padding(.leading, 16)
+                            
                     }
                     .sheet(isPresented: $isMenuOpen) {
                         MenuView()
@@ -34,12 +34,31 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // Edit Icon (Placeholder)
+                    // Chat Session Title
+                    Text(chatSessionId != nil ? "Session \(chatSessionId!)" : "New Chat")
+                        .font(.headline)
+                        .contextMenu {
+                            Button(action: {
+                                // Placeholder for rename functionality
+                                renameChatSession()
+                            }) {
+                                Text("Rename")
+                                Image(systemName: "pencil")
+                            }
+                        }
+
+                    Spacer()
+
+                    // Edit Icon
                     Image(systemName: "square.and.pencil")
                         .resizable()
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.black)  // Set icon color to black
+                        .foregroundColor(.black)
                         .padding(.trailing, 16)
+                        .onTapGesture {
+                            // Placeholder for new chat session creation
+                            createNewChatSession()
+                        }
                 }
                 
                 // Chat Bubbles
@@ -110,27 +129,59 @@ struct ContentView: View {
 
         if let sessionId = chatSessionId {
             print("Session ID exists: \(sessionId). Storing message.")
-            NetworkManager.shared.storeMessage(sessionId: sessionId, content: messageText) { result in
-                switch result {
-                case .success:
+            NetworkManager.shared.storeMessage(in: sessionId, content: messageText, userToken: userToken) { success in
+                if success {
                     DispatchQueue.main.async {
                         self.messages.append(Message(text: self.messageText, isFromCurrentUser: true))
-                        self.messageText = ""
+                        self.messageText = "" // Clear the input field after sending
                     }
-                case .failure(let error):
-                    print("Failed to store message: \(error.localizedDescription)")
+                } else {
+                    print("Failed to store message.")
                 }
             }
         } else {
             print("No Session ID, creating new chat session.")
-            NetworkManager.shared.createChatSession(title: "askldjflaksdjf") { result in
+            NetworkManager.shared.createChatSession(userToken: userToken) { result in
                 switch result {
                 case .success(let sessionId):
-                    self.chatSessionId = sessionId
-                    self.sendMessage() // Retry sending the message after session is created
+                    self.chatSessionId = String(sessionId)
+                    NetworkManager.shared.storeMessage(in: String(sessionId), content: self.messageText, userToken: self.userToken) { success in
+                        if success {
+                            DispatchQueue.main.async {
+                                self.messages.append(Message(text: self.messageText, isFromCurrentUser: true))
+                                self.messageText = "" // Clear the input field after sending
+                            }
+                        } else {
+                            print("Failed to store message.")
+                        }
+                    }
                 case .failure(let error):
                     print("Failed to create chat session: \(error.localizedDescription)")
                 }
+            }
+        }
+    }
+
+    private func renameChatSession() {
+        guard let sessionId = chatSessionId else { return }
+
+        let newTitle = "Renamed Chat" // Replace this with actual input for the new title
+        NetworkManager.shared.updateChatSession(sessionId: sessionId, title: newTitle, userToken: userToken) { success in
+            if success {
+                self.chatSessionId = newTitle
+            } else {
+                print("Failed to rename chat session.")
+            }
+        }
+    }
+
+    private func createNewChatSession() {
+        NetworkManager.shared.createChatSession(userToken: userToken) { result in
+            switch result {
+            case .success(let sessionId):
+                self.chatSessionId = String(sessionId)
+            case .failure(let error):
+                print("Failed to create chat session: \(error.localizedDescription)")
             }
         }
     }
@@ -152,10 +203,10 @@ extension Publishers {
     static var keyboardHeight: AnyPublisher<CGFloat, Never> {
         let willShow = NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
             .map { $0.keyboardHeight }
-        
+
         let willHide = NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
             .map { _ in CGFloat(0) }
-        
+
         return MergeMany(willShow, willHide)
             .eraseToAnyPublisher()
     }
