@@ -1,5 +1,5 @@
 // Message.swift
-// Version 0.0.1
+// Version 0.1.1
 
 import Foundation
 
@@ -7,7 +7,7 @@ struct Message: Identifiable, Decodable {
     let id: Int
     let content: String
     let isFromCurrentUser: Bool
-    let createdAt: TimeInterval
+    let createdAt: TimeInterval?
 
     enum CodingKeys: String, CodingKey {
         case id
