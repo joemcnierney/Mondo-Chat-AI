@@ -1,16 +1,23 @@
 // SettingsView.swift
-// Version 0.0.1
+// Version 0.1.3
 
 import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("userToken") var userToken: String = ""
+    @AppStorage("userEmail") var userEmail: String = "" // Store user's email
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
 
     var body: some View {
         Form {
             Section(header: Text("Account")) {
-                Text("Email")
+                HStack {
+                    Text("Email")
+                    Spacer()
+                    Text(userEmail) // Display user's email
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
                 Text("Subscription")
                 Button(action: {
                     // Placeholder for restore purchases action
@@ -61,6 +68,7 @@ struct SettingsView: View {
 
     private func logout() {
         userToken = ""  // Clear the user token
+        userEmail = ""  // Clear the stored email
         presentationMode.wrappedValue.dismiss()  // Dismiss the settings view
     }
 }

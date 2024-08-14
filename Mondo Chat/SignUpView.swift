@@ -1,5 +1,5 @@
 // SignUpView.swift
-// Version 0.0.1
+// Version 0.1.2
 
 import SwiftUI
 
@@ -91,16 +91,18 @@ struct SignUpView: View {
                 return
             }
 
-            if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-               let token = jsonResponse["authToken"] as? String {
-                DispatchQueue.main.async {
-                    self.userToken = token
-                    // Navigate to the main content view
-                    // This could be done by setting a @State variable that controls the view flow
+            do {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let token = jsonResponse["authToken"] as? String {
+                    DispatchQueue.main.async {
+                        self.userToken = token
+                    }
+                } else {
+                    showError(message: "Error signing up. Please try again.")
                 }
-            } else {
-                print("Failed to parse JSON response")
-                showError(message: "Error signing up. Please try again.")
+            } catch {
+                print("Failed to parse JSON response: \(error.localizedDescription)")
+                showError(message: "Error parsing server response. Please try again.")
             }
         }.resume()
     }

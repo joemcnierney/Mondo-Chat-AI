@@ -1,5 +1,5 @@
 // LoginView.swift
-// Version 0.0.1
+// Version 0.1.3
 
 import SwiftUI
 
@@ -9,6 +9,7 @@ struct LoginView: View {
     @State private var showError: Bool = false
     @State private var errorMessage: String = ""
     @AppStorage("userToken") var userToken: String = ""
+    @AppStorage("userEmail") var userEmail: String = ""
 
     var body: some View {
         VStack {
@@ -91,8 +92,7 @@ struct LoginView: View {
                let token = jsonResponse["authToken"] as? String {
                 DispatchQueue.main.async {
                     self.userToken = token
-                    // Navigate to the main content view
-                    // This could be done by setting a @State variable that controls the view flow
+                    self.userEmail = self.email  // Store the email
                 }
             } else {
                 print("Failed to parse JSON response")

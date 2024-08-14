@@ -1,5 +1,5 @@
 // NetworkManager.swift
-// Version 0.0.1
+// Version 0.1.3
 
 import Foundation
 
@@ -90,6 +90,80 @@ class NetworkManager {
                 return
             }
             completion(true)
+        }.resume()
+    }
+
+    func getChatSessions(userToken: String, completion: @escaping (Result<[ChatSession], Error>) -> Void) {
+        guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/chat_sessions") else {
+            print("Invalid URL")
+            completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                print("No data received")
+                completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+                return
+            }
+
+            do {
+                let sessions = try JSONDecoder().decode([ChatSession].self, from: data)
+                completion(.success(sessions))
+            } catch {
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("Failed JSON Response: \(jsonString)")
+                }
+                print("Failed to decode chat sessions: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    func getMessages(for sessionId: String, userToken: String, completion: @escaping (Result<[Message], Error>) -> Void) {
+        guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages?session_id=\(sessionId)") else {
+            print("Invalid URL")
+            completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                print("No data received")
+                completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+                return
+            }
+
+            do {
+                let messages = try JSONDecoder().decode([Message].self, from: data)
+                completion(.success(messages))
+            } catch {
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("Failed JSON Response: \(jsonString)")
+                }
+                print("Failed to decode messages: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
         }.resume()
     }
 }
