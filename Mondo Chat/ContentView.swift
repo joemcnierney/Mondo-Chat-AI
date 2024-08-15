@@ -1,15 +1,17 @@
 // ContentView.swift
-// Version 0.1.6
+// Version 0.2.2
 
 import SwiftUI
 import Combine
 
 struct ContentView: View {
-    @State private var selectedSessionId: Int? // Changed back to Int?
+    @State private var selectedSessionId: Int?
     @State private var chatSessions: [ChatSession] = []
     @State private var isMenuOpen: Bool = false
-    @State private var messageText: String = "" // Added for message input
-    @State private var messages: [Message] = [] // Added for storing messages
+    @State private var messageText: String = ""
+    @State private var messages: [Message] = []
+    @State private var isRenameSheetOpen: Bool = false
+    @State private var newSessionTitle: String = ""
     @AppStorage("userToken") var userToken: String = ""
 
     var body: some View {
@@ -37,14 +39,9 @@ struct ContentView: View {
                     if let sessionId = selectedSessionId, let session = chatSessions.first(where: { $0.id == sessionId }) {
                         Text(session.title)
                             .font(.headline)
-                            .contextMenu {
-                                Button(action: {
-                                    // Placeholder for rename functionality
-                                    renameChatSession(session: session)
-                                }) {
-                                    Text("Rename")
-                                    Image(systemName: "pencil")
-                                }
+                            .onTapGesture {
+                                newSessionTitle = session.title
+                                isRenameSheetOpen = true
                             }
                     } else {
                         Text("New Chat")
@@ -67,7 +64,7 @@ struct ContentView: View {
 
                 // Chat Messages or Empty State
                 if let sessionId = selectedSessionId {
-                    ChatSessionView(sessionId: String(sessionId)) // Convert sessionId to String for use in ChatSessionView
+                    ChatSessionView(sessionId: String(sessionId))
                 } else {
                     VStack {
                         Text("No Chat Selected")
@@ -100,6 +97,33 @@ struct ContentView: View {
             .onAppear {
                 fetchChatSessions()
             }
+            .sheet(isPresented: $isRenameSheetOpen) {
+                VStack {
+                    Text("Rename Chat Session")
+                        .font(.headline)
+                        .padding()
+
+                    TextField("New Title", text: $newSessionTitle)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding()
+
+                    HStack {
+                        Button("Cancel") {
+                            isRenameSheetOpen = false
+                        }
+                        .padding()
+
+                        Button("Save") {
+                            if let sessionId = selectedSessionId {
+                                renameChatSession(sessionId: sessionId, newTitle: newSessionTitle)
+                            }
+                            isRenameSheetOpen = false
+                        }
+                        .padding()
+                    }
+                }
+                .padding()
+            }
         }
     }
 
@@ -110,7 +134,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     self.chatSessions = sessions
                     if self.selectedSessionId == nil, let firstSession = sessions.first {
-                        self.selectedSessionId = firstSession.id // Use Int for session ID
+                        self.selectedSessionId = firstSession.id
                     }
                 }
             case .failure(let error):
@@ -119,24 +143,10 @@ struct ContentView: View {
         }
     }
 
-    private func fetchMessages(for sessionId: Int) { // Expect sessionId as Int
-        NetworkManager.shared.getMessages(for: String(sessionId), userToken: userToken) { result in
-            switch result {
-            case .success(let fetchedMessages):
-                DispatchQueue.main.async {
-                    self.messages = fetchedMessages
-                }
-            case .failure(let error):
-                print("Failed to fetch messages: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func renameChatSession(session: ChatSession) {
-        let newTitle = "Renamed Chat"
-        NetworkManager.shared.updateChatSession(sessionId: String(session.id), title: newTitle, userToken: userToken) { success in
+    private func renameChatSession(sessionId: Int, newTitle: String) {
+        NetworkManager.shared.updateChatSession(sessionId: String(sessionId), title: newTitle, userToken: userToken) { success in
             if success {
-                if let index = self.chatSessions.firstIndex(where: { $0.id == session.id }) {
+                if let index = self.chatSessions.firstIndex(where: { $0.id == sessionId }) {
                     self.chatSessions[index].title = newTitle
                 }
             } else {
@@ -149,7 +159,7 @@ struct ContentView: View {
         NetworkManager.shared.createChatSession(userToken: userToken) { result in
             switch result {
             case .success(let sessionId):
-                self.selectedSessionId = sessionId // Keep sessionId as Int
+                self.selectedSessionId = sessionId
                 self.fetchChatSessions()
             case .failure(let error):
                 print("Failed to create chat session: \(error.localizedDescription)")
@@ -160,14 +170,13 @@ struct ContentView: View {
     private func sendMessage() {
         guard let sessionId = selectedSessionId, !messageText.isEmpty else { return }
 
-        // Initialize Message correctly
         let newMessage = Message(id: UUID().hashValue, content: messageText, isFromCurrentUser: true, createdAt: Date().timeIntervalSince1970)
 
         NetworkManager.shared.storeMessage(in: String(sessionId), content: messageText, userToken: userToken) { success in
             if success {
                 DispatchQueue.main.async {
                     self.messages.append(newMessage)
-                    self.messageText = "" // Clear input field after sending
+                    self.messageText = ""
                 }
             } else {
                 print("Failed to send message.")

@@ -1,5 +1,5 @@
 // ChatSessionView.swift
-// Version 0.1.2
+// Version 0.1.7
 
 import SwiftUI
 
@@ -15,14 +15,14 @@ struct ChatSessionView: View {
                     HStack {
                         if message.isFromCurrentUser {
                             Spacer()
-                            Text(message.content)  // Updated to use the 'content' property of Message
+                            Text(message.content)
                                 .padding()
                                 .background(Color.blue)
                                 .cornerRadius(12)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                         } else {
-                            Text(message.content)  // Updated to use the 'content' property of Message
+                            Text(message.content)
                                 .padding()
                                 .background(Color.gray.opacity(0.2))
                                 .cornerRadius(12)
@@ -40,11 +40,6 @@ struct ChatSessionView: View {
             }
 
             Spacer()
-
-            // Placeholder for message input field and send button
-            TextField("Type a message...", text: .constant(""))
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
         }
         .navigationBarTitle("Chat", displayMode: .inline)
     }
