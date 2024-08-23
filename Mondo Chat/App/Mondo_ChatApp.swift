@@ -1,5 +1,5 @@
 // Mondo_ChatApp.swift
-// Version 0.1.1
+// Version 1.1.0
 
 import SwiftUI
 
@@ -12,7 +12,7 @@ struct Mondo_ChatApp: App {
             if userToken.isEmpty {
                 LoginView()
             } else {
-                ContentView()  // ContentView will manage the ChatSessionView as its initial view
+                ContentView() // Main content after login
             }
         }
     }

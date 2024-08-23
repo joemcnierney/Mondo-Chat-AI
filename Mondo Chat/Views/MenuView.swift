@@ -1,5 +1,5 @@
 // MenuView.swift
-// Version 0.0.2
+// Version 1.0.0
 
 import SwiftUI
 
@@ -20,6 +20,7 @@ struct MenuView: View {
                                 Spacer()
                                 if session.id == selectedSessionId {
                                     Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
                                 }
                             }
                         }
@@ -28,24 +29,19 @@ struct MenuView: View {
 
                 Section(header: Text("Account")) {
                     NavigationLink(destination: SettingsView()) {
-                        HStack {
-                            Image(systemName: "person.circle")
-                            Text("Account Settings")
-                        }
+                        Text("Settings")
                     }
+                    // Add more navigational links as needed
                 }
             }
-            .listStyle(GroupedListStyle())
-            .navigationBarTitle("Menu")
+            .listStyle(InsetGroupedListStyle())
+            .navigationTitle("Menu")
         }
     }
 }
 
 struct MenuView_Previews: PreviewProvider {
-    @State static var chatSessions: [ChatSession] = [
-        ChatSession(id: 1, title: "Session 1", createdAt: nil, updatedAt: nil),
-        ChatSession(id: 2, title: "Session 2", createdAt: nil, updatedAt: nil)
-    ]
+    @State static var chatSessions = [ChatSession(id: 1, title: "Session 1", createdAt: nil, updatedAt: nil)]
     @State static var selectedSessionId: Int? = 1
 
     static var previews: some View {

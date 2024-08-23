@@ -1,11 +1,11 @@
 // ChatSession.swift
-// Version 0.1.0
+// Version 1.0.0
 
 import Foundation
 
 struct ChatSession: Identifiable, Decodable {
     let id: Int
-    var title: String  // Make title mutable
+    var title: String
     let createdAt: TimeInterval?
     let updatedAt: TimeInterval?
 

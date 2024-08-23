@@ -1,5 +1,5 @@
 // ChatSessionView.swift
-// Version 0.1.7
+// Version 1.2.0
 
 import SwiftUI
 
@@ -32,25 +32,22 @@ struct ChatSessionView: View {
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.vertical, 4)
                 }
             }
-            .onAppear {
-                fetchMessages()
-            }
-
-            Spacer()
+            .padding(.top)
         }
-        .navigationBarTitle("Chat", displayMode: .inline)
+        .onAppear {
+            fetchMessages()
+        }
     }
 
     private func fetchMessages() {
-        NetworkManager.shared.getMessages(for: sessionId, userToken: userToken) { result in
+        guard let sessionIdInt = Int(sessionId) else { return }
+        
+        NetworkManager.shared.fetchMessages(userToken: userToken, sessionId: sessionIdInt) { result in
             switch result {
             case .success(let fetchedMessages):
-                DispatchQueue.main.async {
-                    self.messages = fetchedMessages
-                }
+                messages = fetchedMessages
             case .failure(let error):
                 print("Failed to fetch messages: \(error.localizedDescription)")
             }
