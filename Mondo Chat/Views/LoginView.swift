@@ -1,5 +1,5 @@
 // LoginView.swift
-// Version 1.2.0
+// Version 1.2.1
 
 import SwiftUI
 
@@ -10,6 +10,7 @@ struct LoginView: View {
     @State private var errorMessage: String = ""
     @AppStorage("userToken") var userToken: String = ""
     @AppStorage("userEmail") var userEmail: String = ""
+    @AppStorage("userId") var userId: Int = 0 // Store userId as an Int
 
     var body: some View {
         VStack {
@@ -70,10 +71,13 @@ struct LoginView: View {
 
         NetworkManager.shared.loginUser(email: email, password: password) { result in
             switch result {
-            case .success(let token):
+            case .success(let (token, id)):
                 userToken = token
                 userEmail = email
+                userId = id // Store the userId
                 showError = false
+                print("Login successful. User ID: \(id), Token: \(token)")
+                // Proceed to the next screen or update the UI as needed
             case .failure(let error):
                 errorMessage = "Login failed: \(error.localizedDescription)"
                 showError = true
