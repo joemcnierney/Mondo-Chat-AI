@@ -1,5 +1,5 @@
 // ContentView.swift
-// Version 1.8.3
+// Version 1.8.4
 
 import SwiftUI
 import Combine
@@ -142,6 +142,11 @@ struct ContentView: View {
         .onAppear {
             checkTokenAndFetchSessions()
         }
+        .onChange(of: selectedSessionId) { oldSessionId, newSessionId in
+                    if let sessionId = newSessionId {
+                        fetchMessages(for: sessionId)
+                    }
+                }
     }
 
     private func checkTokenAndFetchSessions() {
@@ -263,6 +268,8 @@ struct ContentView: View {
             switch result {
             case .success:
                 print("Chat session title updated successfully.")
+                // After successfully updating the title, fetch the messages again
+                fetchMessages(for: sessionId)
             case .failure(let error):
                 print("Failed to update chat session title: \(error.localizedDescription)")
                 // Revert to the old title in case of failure
@@ -270,7 +277,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 struct ContentView_Previews: PreviewProvider {

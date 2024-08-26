@@ -177,7 +177,7 @@ class NetworkManager {
     
     // MARK: - Fetch Messages
     func fetchMessages(userToken: String, sessionId: Int, userId: Int, completion: @escaping (Result<[Message], Error>) -> Void) {
-        guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages?session_id=\(sessionId)&user_id=\(userId)") else {
+        guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages?chat_sessions_id=\(sessionId)&users_id=\(userId)") else {
             print("Invalid URL")
             completion(.failure(NetworkError.invalidURL))
             return
@@ -193,24 +193,34 @@ class NetworkManager {
                 completion(.failure(error))
                 return
             }
-            
-            guard let data = data, let response = response as? HTTPURLResponse, response.statusCode == 200 else {
-                print("Invalid response or data during message fetch")
+
+            guard let data = data, let response = response as? HTTPURLResponse else {
+                print("No data or response during message fetch")
                 completion(.failure(NetworkError.invalidResponse))
                 return
             }
-            
+
+            guard response.statusCode == 200 else {
+                print("Unexpected response code: \(response.statusCode)")
+                print("Response data: \(String(data: data, encoding: .utf8) ?? "No data")")
+                completion(.failure(NetworkError.invalidResponse))
+                return
+            }
+
             do {
+                // Attempt to decode the response
                 let messages = try JSONDecoder().decode([Message].self, from: data)
-                print("Fetched messages successfully: \(messages.count) messages")
                 completion(.success(messages))
             } catch {
+                // Log the raw data for debugging purposes
                 print("Failed to decode messages: \(error.localizedDescription)")
+                print("Response data: \(String(data: data, encoding: .utf8) ?? "No data")")
                 completion(.failure(NetworkError.parsingError))
             }
         }.resume()
     }
 
+    
     // MARK: - Login User
     func loginUser(email: String, password: String, completion: @escaping (Result<(String, Int), Error>) -> Void) {
         guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:uoSb7QpQ/auth/login") else {
