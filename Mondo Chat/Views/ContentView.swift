@@ -1,5 +1,5 @@
 // ContentView.swift
-// Version 1.8.3
+// Version 1.8.4
 
 import SwiftUI
 import Combine
@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var isMenuOpen: Bool = false
     @State private var messageText: String = ""
     @State private var messages: [Message] = []
+    @State private var messageCache: [Int: [Message]] = [:] // Cache for messages
     @State private var showRenameSheet: Bool = false
     @State private var newTitle: String = ""
     @State private var isTokenExpired: Bool = false
@@ -142,6 +143,11 @@ struct ContentView: View {
         .onAppear {
             checkTokenAndFetchSessions()
         }
+        .onChange(of: selectedSessionId) { _, newSessionId in
+            if let sessionId = newSessionId {
+                loadMessages(for: sessionId)
+            }
+        }
     }
 
     private func checkTokenAndFetchSessions() {
@@ -159,7 +165,7 @@ struct ContentView: View {
                 self.chatSessions = sessions
                 if self.selectedSessionId == nil, let firstSession = sessions.first {
                     self.selectedSessionId = firstSession.id
-                    fetchMessages(for: firstSession.id)
+                    loadMessages(for: firstSession.id)
                 }
             case .failure(let error):
                 if case NetworkError.invalidResponse = error {
@@ -172,11 +178,21 @@ struct ContentView: View {
         }
     }
 
+    private func loadMessages(for sessionId: Int) {
+        // Load messages from cache or fetch from server
+        if let cachedMessages = messageCache[sessionId] {
+            self.messages = cachedMessages
+        } else {
+            fetchMessages(for: sessionId)
+        }
+    }
+
     private func fetchMessages(for sessionId: Int) {
         NetworkManager.shared.fetchMessages(userToken: userToken, sessionId: sessionId, userId: userId) { result in
             switch result {
             case .success(let fetchedMessages):
                 self.messages = fetchedMessages
+                self.messageCache[sessionId] = fetchedMessages // Cache the fetched messages
             case .failure(let error):
                 print("Failed to fetch messages: \(error.localizedDescription)")
             }
@@ -197,6 +213,7 @@ struct ContentView: View {
             case .success(_):
                 print("Message sent successfully.")
                 self.messages.append(newMessage)
+                self.messageCache[sessionId] = self.messages // Update the cache
                 self.messageText = ""
             case .failure(let error):
                 print("Failed to send message: \(error.localizedDescription)")
@@ -211,6 +228,7 @@ struct ContentView: View {
                 self.chatSessions.append(newSession)
                 self.selectedSessionId = newSession.id
                 self.messages = [] // Reset messages for new session
+                self.messageCache[newSession.id] = [] // Initialize empty cache for new session
             case .failure(let error):
                 print("Failed to create chat session: \(error.localizedDescription)")
             }
@@ -270,7 +288,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 struct ContentView_Previews: PreviewProvider {

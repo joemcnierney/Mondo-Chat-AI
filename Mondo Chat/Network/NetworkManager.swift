@@ -176,8 +176,16 @@ class NetworkManager {
     }
     
     // MARK: - Fetch Messages
-    func fetchMessages(userToken: String, sessionId: Int, userId: Int, completion: @escaping (Result<[Message], Error>) -> Void) {
-        guard let url = URL(string: "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages?session_id=\(sessionId)&user_id=\(userId)") else {
+    func fetchMessages(userToken: String, sessionId: Int, userId: Int?, completion: @escaping (Result<[Message], Error>) -> Void) {
+        // Construct the URL with chat_sessions_id and optionally users_id
+        var urlString = "https://x8ki-letl-twmt.n7.xano.io/api:ypqbxXlC/messages?chat_sessions_id=\(sessionId)"
+        
+        // If userId is provided, append it to the URL
+        if let userId = userId {
+            urlString.append("&users_id=\(userId)")
+        }
+        
+        guard let url = URL(string: urlString) else {
             print("Invalid URL")
             completion(.failure(NetworkError.invalidURL))
             return
