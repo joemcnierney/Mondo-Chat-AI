@@ -1,7 +1,8 @@
 // ChatSessionView.swift
-// Version 1.2.1
+// Version 2.0.0
 
 import SwiftUI
+import Combine
 
 struct ChatSessionView: View {
     @Binding var selectedSessionId: Int?
@@ -12,6 +13,7 @@ struct ChatSessionView: View {
     @State private var messages: [Message] = []
     @State private var messageText: String = ""
     @State private var messageCache: [Int: [Message]] = [:] // Cache for messages
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack {
@@ -43,7 +45,7 @@ struct ChatSessionView: View {
                         }
                     }
                     .padding(.top)
-                    .onChange(of: messages.count) { _ in
+                    .onAppear {
                         if let lastMessage = messages.last {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
@@ -73,7 +75,7 @@ struct ChatSessionView: View {
         .onAppear {
             loadMessages()
         }
-        .onChange(of: selectedSessionId) { _, newSessionId in
+        .onChange(of: selectedSessionId) { newSessionId in
             if let sessionId = newSessionId {
                 loadMessages(for: sessionId)
             }
@@ -92,16 +94,16 @@ struct ChatSessionView: View {
     }
 
     private func fetchMessages(for sessionId: Int) {
-        // Fetch messages from the server without filtering by userId
-        NetworkManager.shared.fetchMessages(userToken: userToken, sessionId: sessionId, userId: userId) { result in
-            switch result {
-            case .success(let fetchedMessages):
+        NetworkManager.shared.fetchMessages(userToken: userToken, sessionId: sessionId, userId: userId)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    print("Failed to fetch messages: \(error.localizedDescription)")
+                }
+            }, receiveValue: { fetchedMessages in
                 self.messages = fetchedMessages
                 self.messageCache[sessionId] = fetchedMessages // Cache the fetched messages
-            case .failure(let error):
-                print("Failed to fetch messages: \(error.localizedDescription)")
-            }
-        }
+            })
+            .store(in: &cancellables)
     }
 
     private func sendMessage() {
@@ -113,17 +115,18 @@ struct ChatSessionView: View {
         let newMessage = Message(id: UUID().hashValue, content: messageText, isFromCurrentUser: true, createdAt: Date().timeIntervalSince1970)
 
         // Send the message to Xano
-        NetworkManager.shared.sendMessage(userToken: userToken, userId: userId, sessionId: sessionId, message: newMessage) { result in
-            switch result {
-            case .success(_):
+        NetworkManager.shared.sendMessage(userToken: userToken, userId: userId, sessionId: sessionId, message: newMessage)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    print("Failed to send message: \(error.localizedDescription)")
+                }
+            }, receiveValue: {
                 print("Message sent successfully.")
                 self.messages.append(newMessage)
                 self.messageCache[sessionId] = self.messages // Update the cache
                 self.messageText = ""
-            case .failure(let error):
-                print("Failed to send message: \(error.localizedDescription)")
-            }
-        }
+            })
+            .store(in: &cancellables)
     }
 }
 

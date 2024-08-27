@@ -1,7 +1,8 @@
 // LoginView.swift
-// Version 1.2.1
+// Version 2.0.0
 
 import SwiftUI
+import Combine
 
 struct LoginView: View {
     @State private var email: String = ""
@@ -11,6 +12,7 @@ struct LoginView: View {
     @AppStorage("userToken") var userToken: String = ""
     @AppStorage("userEmail") var userEmail: String = ""
     @AppStorage("userId") var userId: Int = 0 // Store userId as an Int
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack {
@@ -69,20 +71,21 @@ struct LoginView: View {
             return
         }
 
-        NetworkManager.shared.loginUser(email: email, password: password) { result in
-            switch result {
-            case .success(let (token, id)):
+        NetworkManager.shared.loginUser(email: email, password: password)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    errorMessage = "Login failed: \(error.localizedDescription)"
+                    showError = true
+                }
+            }, receiveValue: { (token, id) in
                 userToken = token
                 userEmail = email
-                userId = id // Store the userId
+                userId = id
                 showError = false
                 print("Login successful. User ID: \(id), Token: \(token)")
                 // Proceed to the next screen or update the UI as needed
-            case .failure(let error):
-                errorMessage = "Login failed: \(error.localizedDescription)"
-                showError = true
-            }
-        }
+            })
+            .store(in: &cancellables)
     }
 }
 

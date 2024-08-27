@@ -1,7 +1,8 @@
 // SignUpView.swift
-// Version 1.1.0
+// Version 2.0.0
 
 import SwiftUI
+import Combine
 
 struct SignUpView: View {
     @State private var name: String = ""
@@ -10,6 +11,8 @@ struct SignUpView: View {
     @State private var showError: Bool = false
     @State private var errorMessage: String = ""
     @AppStorage("userToken") var userToken: String = ""
+    @AppStorage("userId") var userId: Int = 0 // Store userId as an Int
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack {
@@ -67,8 +70,26 @@ struct SignUpView: View {
     }
 
     private func signUp() {
-        // Implement the sign-up function
-        // Handle user registration and manage errors, updating showError and errorMessage as needed
+        guard !name.isEmpty, !email.isEmpty, !password.isEmpty else {
+            errorMessage = "Please fill in all fields."
+            showError = true
+            return
+        }
+
+        NetworkManager.shared.signUpUser(name: name, email: email, password: password)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    errorMessage = "Sign-up failed: \(error.localizedDescription)"
+                    showError = true
+                }
+            }, receiveValue: { (token, id) in
+                userToken = token
+                userId = id
+                showError = false
+                print("Sign-up successful. User ID: \(id), Token: \(token)")
+                // Proceed to the next screen or update the UI as needed
+            })
+            .store(in: &cancellables)
     }
 }
 
