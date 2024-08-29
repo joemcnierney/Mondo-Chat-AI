@@ -19,12 +19,14 @@ struct LoginView: View {
             Spacer()
 
             // App Logo and Slogan
-            Text("mon·do")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            Image("Logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100) // Adjust size as needed
             Text("CMO in your pocket")
-                .font(.subheadline)
-                .foregroundColor(.gray)
+                .font(.subheadline
+                      .bold())
+                .foregroundColor(.black)
 
             Spacer()
 
@@ -53,7 +55,7 @@ struct LoginView: View {
                     .fontWeight(.bold)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.blue)
+                    .background(.black)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
