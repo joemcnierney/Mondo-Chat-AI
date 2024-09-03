@@ -1,11 +1,12 @@
 // MenuView.swift
-// Version 2.0.0
+// Version 2.1.3
 
 import SwiftUI
 
 struct MenuView: View {
     @Binding var chatSessions: [ChatSession]
     @Binding var selectedSessionId: Int?
+    var onSessionSelected: (Int) -> Void
 
     var body: some View {
         NavigationView {
@@ -14,6 +15,7 @@ struct MenuView: View {
                     ForEach(chatSessions) { session in
                         Button(action: {
                             selectedSessionId = session.id
+                            onSessionSelected(session.id)
                         }) {
                             HStack {
                                 Text(session.title)
@@ -31,7 +33,6 @@ struct MenuView: View {
                     NavigationLink(destination: SettingsView()) {
                         Text("Settings")
                     }
-                    // Add more navigational links as needed
                 }
             }
             .listStyle(InsetGroupedListStyle())
@@ -45,6 +46,6 @@ struct MenuView_Previews: PreviewProvider {
     @State static var selectedSessionId: Int? = 1
 
     static var previews: some View {
-        MenuView(chatSessions: $chatSessions, selectedSessionId: $selectedSessionId)
+        MenuView(chatSessions: $chatSessions, selectedSessionId: $selectedSessionId, onSessionSelected: { _ in })
     }
 }

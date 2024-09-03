@@ -1,5 +1,5 @@
 // ContentView.swift
-// Version 2.0.0
+// Version 2.1.4
 
 import SwiftUI
 import Combine
@@ -10,13 +10,13 @@ struct ContentView: View {
     @State private var isMenuOpen: Bool = false
     @State private var messageText: String = ""
     @State private var messages: [Message] = []
-    @State private var messageCache: [Int: [Message]] = [:] // Cache for messages
     @State private var showRenameSheet: Bool = false
     @State private var newTitle: String = ""
     @State private var isTokenExpired: Bool = false
     @State private var navigateToLogin: Bool = false
     @AppStorage("userToken") var userToken: String = ""
     @AppStorage("userId") var userId: Int = 0 // Ensure userId is stored as an Int
+
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
@@ -107,10 +107,8 @@ struct ContentView: View {
                             }
                         }
                         .padding(.top)
-                        .onAppear {
-                            if let lastMessage = messages.last {
-                                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
-                            }
+                        .onChange(of: messages.count) {
+                            scrollView.scrollTo(messages.last?.id, anchor: .bottom)
                         }
                     }
                 }
@@ -137,8 +135,11 @@ struct ContentView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $isMenuOpen) {
-            MenuView(chatSessions: $chatSessions, selectedSessionId: $selectedSessionId)
-                .transition(.move(edge: .leading))
+            MenuView(chatSessions: $chatSessions, selectedSessionId: $selectedSessionId) { sessionId in
+                fetchMessages(for: sessionId)
+                isMenuOpen = false
+            }
+            .transition(.move(edge: .leading))
         }
         .sheet(isPresented: $showRenameSheet) {
             renameChatSheet()
@@ -161,9 +162,11 @@ struct ContentView: View {
             .sink(receiveCompletion: { completion in
                 if case .failure(let error) = completion {
                     if case NetworkError.invalidResponse = error {
+                        print("Failed to fetch chat sessions: \(error.localizedDescription)")
                         isTokenExpired = true
+                    } else {
+                        print("Failed to fetch chat sessions: \(error.localizedDescription)")
                     }
-                    print("Failed to fetch chat sessions: \(error.localizedDescription)")
                 }
             }, receiveValue: { sessions in
                 self.chatSessions = sessions
@@ -183,7 +186,6 @@ struct ContentView: View {
                 }
             }, receiveValue: { fetchedMessages in
                 self.messages = fetchedMessages
-                self.messageCache[sessionId] = fetchedMessages // Cache the fetched messages
             })
             .store(in: &cancellables)
     }
@@ -196,7 +198,6 @@ struct ContentView: View {
 
         let newMessage = Message(id: UUID().hashValue, content: messageText, isFromCurrentUser: true, createdAt: Date().timeIntervalSince1970)
 
-        // Send the message to Xano
         NetworkManager.shared.sendMessage(userToken: userToken, userId: userId, sessionId: sessionId, message: newMessage)
             .sink(receiveCompletion: { completion in
                 if case .failure(let error) = completion {
@@ -205,7 +206,6 @@ struct ContentView: View {
             }, receiveValue: {
                 print("Message sent successfully.")
                 self.messages.append(newMessage)
-                self.messageCache[sessionId] = self.messages // Update the cache
                 self.messageText = ""
             })
             .store(in: &cancellables)
@@ -220,7 +220,7 @@ struct ContentView: View {
             }, receiveValue: { newSession in
                 self.chatSessions.append(newSession)
                 self.selectedSessionId = newSession.id
-                self.messages = [] // Reset messages for new session
+                self.messages = [] // Reset messages for the new session
             })
             .store(in: &cancellables)
     }
@@ -266,12 +266,11 @@ struct ContentView: View {
         chatSessions[sessionIndex].title = newTitle
         showRenameSheet = false
 
-        // Update the session title on the server
         NetworkManager.shared.updateChatSessionTitle(userToken: userToken, sessionId: sessionId, userId: userId, newTitle: newTitle)
             .sink(receiveCompletion: { completion in
                 if case .failure(let error) = completion {
                     print("Failed to update chat session title: \(error.localizedDescription)")
-                    chatSessions[sessionIndex].title = oldTitle // Revert to the old title in case of failure
+                    chatSessions[sessionIndex].title = oldTitle
                 }
             }, receiveValue: {
                 print("Chat session title updated successfully.")

@@ -6,6 +6,10 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6AB3106F2C80D27E00CBCCF4 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 6AB3106E2C80D27E00CBCCF4 /* Starscream */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		6A14EE9E2C66AD7300FAD5D5 /* Mondo Chat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mondo Chat.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -19,6 +23,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6AB3106F2C80D27E00CBCCF4 /* Starscream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,6 +66,7 @@
 			);
 			name = "Mondo Chat";
 			packageProductDependencies = (
+				6AB3106E2C80D27E00CBCCF4 /* Starscream */,
 			);
 			productName = "Mondo Chat";
 			productReference = 6A14EE9E2C66AD7300FAD5D5 /* Mondo Chat.app */;
@@ -90,6 +96,9 @@
 				Base,
 			);
 			mainGroup = 6A14EE952C66AD7300FAD5D5;
+			packageReferences = (
+				6AB3106D2C80D27E00CBCCF4 /* XCRemoteSwiftPackageReference "Starscream" */,
+			);
 			productRefGroup = 6A14EE9F2C66AD7300FAD5D5 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -327,6 +336,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6AB3106D2C80D27E00CBCCF4 /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.8;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6AB3106E2C80D27E00CBCCF4 /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6AB3106D2C80D27E00CBCCF4 /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6A14EE962C66AD7300FAD5D5 /* Project object */;
 }

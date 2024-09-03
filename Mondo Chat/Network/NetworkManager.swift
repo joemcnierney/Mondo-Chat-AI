@@ -3,6 +3,7 @@
 
 import Foundation
 import Combine
+import Starscream
 
 class NetworkManager {
     static let shared = NetworkManager()
@@ -26,6 +27,7 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to create chat session: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 return output.data
@@ -34,6 +36,7 @@ class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
 
     // MARK: - Fetch Chat Sessions
     func fetchChatSessions(userToken: String) -> AnyPublisher<[ChatSession], Error> {
@@ -48,6 +51,7 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to fetch chat sessions: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 return output.data
@@ -56,6 +60,7 @@ class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
 
     // MARK: - Fetch Messages
     func fetchMessages(userToken: String, sessionId: Int, userId: Int?) -> AnyPublisher<[Message], Error> {
@@ -75,6 +80,7 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to fetch messages: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 return output.data
@@ -83,6 +89,7 @@ class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
 
     // MARK: - Send Message
     func sendMessage(userToken: String, userId: Int, sessionId: Int, message: Message) -> AnyPublisher<Void, Error> {
@@ -107,6 +114,7 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to send message: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 return ()
@@ -114,6 +122,7 @@ class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
 
     // MARK: - Update Chat Session Title
     func updateChatSessionTitle(userToken: String, sessionId: Int, userId: Int, newTitle: String) -> AnyPublisher<Void, Error> {
@@ -135,6 +144,7 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to update chat session title: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 return ()
@@ -142,6 +152,7 @@ class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+
 
     // MARK: - Sign-Up User
     func signUpUser(name: String, email: String, password: String) -> AnyPublisher<(String, Int), Error> {
@@ -159,11 +170,13 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
+                    print("Failed to sign up: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
                 guard let json = try? JSONSerialization.jsonObject(with: output.data, options: []) as? [String: Any],
                       let token = json["authToken"] as? String,
                       let userId = json["user_id"] as? Int else {
+                    print("Failed to parse sign-up response")
                     throw NetworkError.parsingError
                 }
                 return (token, userId)
@@ -188,28 +201,14 @@ class NetworkManager {
         return URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { output in
                 guard let response = output.response as? HTTPURLResponse, response.statusCode == 200 else {
-                    print("Invalid response: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
+                    print("Failed to login: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
                     throw NetworkError.invalidResponse
                 }
 
-                // Log the raw response data
-                print("Raw response data: \(String(data: output.data, encoding: .utf8) ?? "No Data")")
-
-                guard let json = try? JSONSerialization.jsonObject(with: output.data, options: []) as? [String: Any] else {
-                    print("Failed to parse JSON")
-                    throw NetworkError.parsingError
-                }
-
-                // Log the parsed JSON
-                print("Parsed JSON: \(json)")
-
-                guard let token = json["authToken"] as? String else {
-                    print("authToken not found in response")
-                    throw NetworkError.parsingError
-                }
-
-                guard let userId = json["user_id"] as? Int else {
-                    print("user_id not found in response")
+                guard let json = try? JSONSerialization.jsonObject(with: output.data, options: []) as? [String: Any],
+                      let token = json["authToken"] as? String,
+                      let userId = json["user_id"] as? Int else {
+                    print("Failed to parse login response")
                     throw NetworkError.parsingError
                 }
 

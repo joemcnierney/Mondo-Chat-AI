@@ -1,5 +1,5 @@
 // ChatSessionView.swift
-// Version 2.0.0
+// Version 2.1.5
 
 import SwiftUI
 import Combine
@@ -12,12 +12,10 @@ struct ChatSessionView: View {
 
     @State private var messages: [Message] = []
     @State private var messageText: String = ""
-    @State private var messageCache: [Int: [Message]] = [:] // Cache for messages
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack {
-            // Chat messages display
             ScrollViewReader { scrollView in
                 ScrollView {
                     VStack(spacing: 8) {
@@ -55,7 +53,6 @@ struct ChatSessionView: View {
 
             Spacer()
 
-            // Message input field and send button, anchored at the bottom
             HStack {
                 TextField("Enter your message", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -73,7 +70,9 @@ struct ChatSessionView: View {
             .ignoresSafeArea(edges: .bottom)
         }
         .onAppear {
-            loadMessages()
+            if let sessionId = selectedSessionId {
+                loadMessages(for: sessionId)
+            }
         }
         .onChange(of: selectedSessionId) { newSessionId in
             if let sessionId = newSessionId {
@@ -82,26 +81,16 @@ struct ChatSessionView: View {
         }
     }
 
-    private func loadMessages(for sessionId: Int? = nil) {
-        guard let sessionId = sessionId ?? selectedSessionId else { return }
+    private func loadMessages(for sessionId: Int) {
+        clearMessages() // Clear existing messages before loading new ones
 
-        // Load messages from cache or fetch from server
-        if let cachedMessages = messageCache[sessionId] {
-            self.messages = cachedMessages
-        } else {
-            fetchMessages(for: sessionId)
-        }
-    }
-
-    private func fetchMessages(for sessionId: Int) {
         NetworkManager.shared.fetchMessages(userToken: userToken, sessionId: sessionId, userId: userId)
             .sink(receiveCompletion: { completion in
                 if case .failure(let error) = completion {
                     print("Failed to fetch messages: \(error.localizedDescription)")
                 }
             }, receiveValue: { fetchedMessages in
-                self.messages = fetchedMessages
-                self.messageCache[sessionId] = fetchedMessages // Cache the fetched messages
+                self.messages = fetchedMessages // Only messages from the selected session
             })
             .store(in: &cancellables)
     }
@@ -123,10 +112,13 @@ struct ChatSessionView: View {
             }, receiveValue: {
                 print("Message sent successfully.")
                 self.messages.append(newMessage)
-                self.messageCache[sessionId] = self.messages // Update the cache
                 self.messageText = ""
             })
             .store(in: &cancellables)
+    }
+
+    private func clearMessages() {
+        self.messages = [] // Clear the messages array
     }
 }
 

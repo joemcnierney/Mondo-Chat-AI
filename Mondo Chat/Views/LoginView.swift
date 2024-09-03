@@ -1,5 +1,5 @@
 // LoginView.swift
-// Version 2.0.0
+// Version 2.1.0
 
 import SwiftUI
 import Combine
@@ -24,8 +24,7 @@ struct LoginView: View {
                 .scaledToFit()
                 .frame(width: 100, height: 100) // Adjust size as needed
             Text("CMO in your pocket")
-                .font(.subheadline
-                      .bold())
+                .font(.subheadline.bold())
                 .foregroundColor(.black)
 
             Spacer()
@@ -55,7 +54,7 @@ struct LoginView: View {
                     .fontWeight(.bold)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(.black)
+                    .background(Color.black)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
@@ -86,6 +85,7 @@ struct LoginView: View {
                 showError = false
                 print("Login successful. User ID: \(id), Token: \(token)")
                 // Proceed to the next screen or update the UI as needed
+                // Example: Navigate to main content view if necessary
             })
             .store(in: &cancellables)
     }
